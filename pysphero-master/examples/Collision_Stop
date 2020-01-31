@@ -30,34 +30,38 @@ def notify_callback(data: Dict):
 
 
 def main():
-    mac_address = "F1:B6:E8:5A:7B:D7"  # Sphero 1
-    # mac_address = "F1:8D:AE:17:9D:75" #Sphero 2
+    #mac_address = "F1:B6:E8:5A:7B:D7"  # Sphero 1
+    mac_address = "F1:8D:AE:17:9D:75" #Sphero 2
     with Sphero(mac_address=mac_address) as sphero:
         sphero.power.wake()
 
-        #print(f"Resetting Yaw!")
-        #sphero.driving.reset_yaw()
         #print(f"Calibrating to North!")
         #sphero.sensor.magnetometer_calibrate_to_north()
+        #sleep(5)
+        #sphero.driving.drive_with_heading(0, 315, Direction.forward)
 
         print(f"Turning on Lights!")
         sphero.user_io.set_all_leds_8_bit_mask(front_color=Color(red=0xff), back_color=Color(blue=0xff))
         sphero.user_io.set_led_matrix_single_character("!", Color(red=0xff))
         # sphero.user_io.set_all_leds_8_bit_mask(front_color=Color(red=0xff))
+        
+        
+        print(f"Resetting Yaw!")
+        sphero.driving.reset_yaw()
 
         print(f"Sensors On!")
         sphero.sensor.set_notify(velocity_callback, CoreTime, Velocity)
 
         speed = 255
-        heading = 90
-
-        # sphero.driving.reset_yaw()
+        heading = 0
 
         print(f"Motors Engaged!")
+        #collision = False
         sphero.driving.drive_with_heading(speed, heading, Direction.forward)
-        collision = False
+        #sleep(0.5)
         print("Entering While Loop")
-        while not collision:
+        #while not collision:
+        while True:
             print("While Loop")
             sleep(0.25)
             if len(velo) >= 3:
@@ -66,21 +70,25 @@ def main():
                 curr = [float(c) for c in curr]
                 prev = [float(p) for p in prev]
 
-                if curr[1] < prev[1]:
-                    collision = True
-                    sphero.power.enter_soft_sleep()
+                if abs(curr[1]) < abs(prev[1]):
+                    #collision = True
+                    #sphero.power.enter_soft_sleep()
+                    #sphero.driving.set_stabilization()
+                    sphero.driving.raw_motor(0, DirectionRawMotor.disable, 0, DirectionRawMotor.disable)
                     print("Collision detected, sleeping")
+                    sphero.user_io.set_led_matrix_single_character("X", Color(red=0xff))
                     print(prev[1])
                     print(curr[1])
-                    sphero.driving.raw_motor(0, DirectionRawMotor.disable, 0, DirectionRawMotor.disable)
-                    #break
+                    #sleep(0.5)
+                    #sphero.driving.drive_with_heading(speed=0, heading=315, direction=Direction.forward)
+                    break
 
        # sleep(0.5)
         print(f"Sensors Disengaged!")
-        #sphero.sensor.cancel_notify_sensors()
+        sphero.sensor.cancel_notify_sensors()
 
-
-        print(f"Accelerometer data:{accel}")
+        sphero.driving.drive_with_heading(speed=0, heading=315, direction=Direction.forward)
+       #print(f"Accelerometer data:{accel}")
 
 
 if __name__ == "__main__":

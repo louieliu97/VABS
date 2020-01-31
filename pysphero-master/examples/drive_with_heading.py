@@ -11,10 +11,10 @@ def main():
     with Sphero(mac_address=mac_address) as sphero:
         sphero.power.wake()
 
-        for _ in range(5):
-            sleep(2)
-            speed = random.randint(50, 100)
-            heading = random.randint(0, 360)
+        for _ in range(1):
+            sleep(1)
+            speed = 0
+            heading = 180
             print(f"Send drive with speed {speed} and heading {heading}")
             A,B,C = sphero.sensor.get_sensor_streaming_mask()
             print(f"A:{A}")
