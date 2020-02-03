@@ -1,16 +1,16 @@
-from pysphero_tests.pysphero.core import Sphero
+from pysphero_tests.pysphero.core import Sphero, SpheroCore
 from pysphero_tests.pysphero.driving import Direction, DirectionRawMotor
 from time import sleep
 from typing import Dict
 from pysphero_tests.pysphero.device_api.sensor import CoreTime, Accelerometer, Gyroscope, Velocity
-from pysphero_tests.pysphero.device_api.user_io import Color
+from pysphero_tests.pysphero.device_api.user_io import Color, UserIOCommand, UserIO
 
 class Cueball:
     def __init__(self):
         # mac_address = "F1:B6:E8:5A:7B:D7"  # Sphero 1
         mac_address = "F1:8D:AE:17:9D:75"  # Sphero 2
-        self.sphero = Sphero
-        Sphero.mac_address = mac_address
+        self.sphero = Sphero(mac_address)
+        self.sphero.__enter__()
         accel=[]
         velo=[]
 
@@ -56,6 +56,14 @@ class Cueball:
         sleep(1)
 
     def drive_until_collison (self, speed):
+        """
+        This function makes the Sphero go straight ahead at a specified speed.
+        Sphero will stop when it collides with something.
+
+        @params: int speed (0-255)
+
+        @returns none
+        """
         self.sphero.power.wake()
 
         # print(f"Calibrating to North!")
@@ -106,9 +114,7 @@ class Cueball:
         print(f"Sensors Disengaged!")
         self.sphero.sensor.cancel_notify_sensors()
 
-
 if __name__ == '__main__':
     z=Cueball()
     z.rotate_cue(180)
-
 
