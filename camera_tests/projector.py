@@ -53,6 +53,11 @@ class Projector:
 
         return [hull]
 
+    def showImage(self, image):
+        cv2.imshow('', image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        
     def findSphero(self):
         """
         This function will find the center pixel position of the sphero from a color image
@@ -67,27 +72,18 @@ class Projector:
         #convert to grayscale for HoughCircles
         img = cv2.cvtColor(cimg, cv2.COLOR_BGR2GRAY)
 
-        circles = np.asarray(cv2.HoughCircles(img, cv2.HOUGH_GRADIENT,1, 5,
-                            param1=40, param2=30, minRadius=15, maxRadius=30))
+        circles = np.asarray(cv2.HoughCircles(img, cv2.HOUGH_GRADIENT,1, 2,
+                                              param1=37, param2=28, minRadius=18, maxRadius=25))
+        
         # The return array from opencv functions puts the end list inside another
         # list, which makes it difficult to deal with, so we reshape.
         circles = circles.reshape((circles.shape[1], circles.shape[2]))
         # We order by the 3rd column which is radius, since we know that the sphero
         # has the largest radius.
         circles = circles[circles[:,2].argsort()]
-        print(circles)
 
-        for i in circles:
-            #draw outer circle
-            cv2.circle(cimg, (i[0], i[1]), i[2], (0,255,0), 2)
-            
-            #draw center of circle
-            cv2.circle(cimg, (i[0], i[1]), 2, (0,0,255), 3)
+        # The circle with the largest radius should be the sphero as it is larger
+        # than any of the pool balls.
+        last = circles[-1]
 
-        s = circles[-1]
-        cv2.circle(cimg, (s[0], s[1]), s[2], (255, 0, 0), 2)
-        cv2.circle(cimg, (s[0], s[1]), 2, (0,255,0), 3)
-
-        cv2.imshow('',cimg)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        return (last[0], last[1])

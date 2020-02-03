@@ -21,7 +21,7 @@ class Camera:
         """
 
         #Let auto-exposure settle down by waiting for multiple frames
-        for i in range(10):
+        for i in range(20):
             frames = self.pipeline.wait_for_frames()
             
         color_frame = frames.get_color_frame()
