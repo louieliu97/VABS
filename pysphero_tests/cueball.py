@@ -1,36 +1,33 @@
-from pysphero_tests.pysphero.core import Sphero, SpheroCore
-from pysphero_tests.pysphero.driving import Direction, DirectionRawMotor
+from pysphero.core import Sphero, SpheroCore
+from pysphero.driving import Direction, DirectionRawMotor
 from time import sleep
 from typing import Dict
-from pysphero_tests.pysphero.device_api.sensor import CoreTime, Accelerometer, Gyroscope, Velocity
-from pysphero_tests.pysphero.device_api.user_io import Color, UserIOCommand, UserIO
+from pysphero.device_api.sensor import CoreTime, Accelerometer, Gyroscope, Velocity
+from pysphero.device_api.user_io import Color, UserIOCommand, UserIO
 
 class Cueball:
     def __init__(self):
-        # mac_address = "F1:B6:E8:5A:7B:D7"  # Sphero 1
-        mac_address = "F1:8D:AE:17:9D:75"  # Sphero 2
+        mac_address = "F1:B6:E8:5A:7B:D7"  # Sphero 1
+        #mac_address = "F1:8D:AE:17:9D:75"  # Sphero 2
         self.sphero = Sphero(mac_address)
         self.sphero.__enter__()
-        accel=[]
-        velo=[]
+        #self.sphero.power.wake()
+        self.accel=[]
+        self.velo=[]
 
-    def velocity_callback(data: Dict):
+    def velocity_callback(self, data: Dict):
         info = ",".join("{:1.2f}".format(data.get(param)) for param in Velocity)
         print(f"[{data.get(CoreTime.core_time):1.2f}] Velocity (x,y): {info}")
         print("=" * 60)
 
-        velo.append(info)
+        self.velo.append(info)
 
-    def notify_callback(data: Dict):
+    def notify_callback(self, data: Dict):
         info = ", ".join("{:1.2f}".format(data.get(param)) for param in Accelerometer)
         print(f"[{data.get(CoreTime.core_time):1.2f}] Accelerometer (x, y, z): {info}")
         print("=" * 60)
-        # accel_old = accel[-1][1]
-        accel.append(info)
-        # accel_new = accel[-1][1]
 
-        # if accel_new<accel_old:
-        #   collison = True
+        self.accel.append(info)
 
     def rotate_cue (self, angle):
         """
@@ -55,7 +52,7 @@ class Cueball:
         self.sphero.driving.drive_with_heading(speed=0, heading=angle)
         sleep(1)
 
-    def drive_until_collison (self, speed):
+    def drive_until_collision(self, speed):
         """
         This function makes the Sphero go straight ahead at a specified speed.
         Sphero will stop when it collides with something.
@@ -80,7 +77,7 @@ class Cueball:
         self.sphero.driving.reset_yaw()
 
         print(f"Sensors On!")
-        self.sphero.sensor.set_notify(velocity_callback, CoreTime, Velocity)
+        self.sphero.sensor.set_notify(self.velocity_callback, CoreTime, Velocity)
 
         print(f"Motors Engaged!")
         # collision = False
@@ -91,9 +88,9 @@ class Cueball:
         while True:
             print("While Loop")
             sleep(0.25)
-            if len(velo) >= 3:
-                curr = velo[-1].split(',')
-                prev = velo[-2].split(",")
+            if len(self.velo) >= 3:
+                curr = self.velo[-1].split(',')
+                prev = self.velo[-2].split(",")
                 curr = [float(c) for c in curr]
                 prev = [float(p) for p in prev]
 
@@ -117,4 +114,5 @@ class Cueball:
 if __name__ == '__main__':
     z=Cueball()
     z.rotate_cue(180)
+    z.drive_until_collision(255)
 
