@@ -1,3 +1,5 @@
+import math
+
 import cv2
 import pyrealsense2 
 
@@ -9,6 +11,7 @@ class Projector:
 
     def __init__(self):
         self.camera = Camera()
+        self.shape = self.camera.getColorImage().shape
 
     def getTableSegment(self):
         """
@@ -20,7 +23,7 @@ class Projector:
         """
         table_img = self.camera.getColorImage()
         
-        center = [int(table_img.shape[0]/2), int(table_img.shape[1]/2)]
+        center = [int(self.shape[0]/2), int(self.shape[1]/2)]
 
         #convert image to hsv
         hsv = cv2.cvtColor(table_img.copy(), cv2.COLOR_BGR2HSV)
@@ -45,16 +48,33 @@ class Projector:
 
         maxContour = contours[np.argmax(np.array(areas))]
 
-        # Find the convex hull of the maxContour since the contour isn't likely to have
-        # very straight lines
-        hull = cv2.convexHull(maxContour)
-        #cv2.drawContours(table_img, maxContour, -1, (0,255,0), 1)
-        #cv2.drawContours(table_img, [hull], -1, (255,0,0), 1)
+        # Find the minimum rectangle that surrounds the maxContour since the contour
+        # isn't likely to have very straight lines
+        rect = cv2.minAreaRect(maxContour)
+        box = np.int0(cv2.boxPoints(rect))
+        return [box]
 
-        return [hull]
+    def order_corners(self, pts):
+        """
+        Given the four points found for our contour, order them into
+        Top Left, Top Right, Bottom Right, Bottom Left
+        This order is important for perspective transforms
 
-    def showImage(self, image):
-        cv2.imshow('', image)
+        :param pts: Contour points to be ordered correctly
+        """
+        rect = np.zeros((4,2), dtype=np.int16)
+
+        s = pts.sum(axis=1)
+        rect[0] = pts[np.argmin(s)]
+        rect[2] = pts[np.argmax(s)]
+
+        diff = np.diff(pts, axis=1)
+        rect[1] = pts[np.argmin(diff)]
+        rect[3] = pts[np.argmax(diff)]
+        return rect
+
+    def showImage(self,image, window=''):
+        cv2.imshow(window, image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
         
@@ -66,15 +86,17 @@ class Projector:
 
         @return pixel: The pixel in the image containing the center of the sphero
         """
-
-        cimg = self.camera.getColorImage()
-
-        #convert to grayscale for HoughCircles
-        img = cv2.cvtColor(cimg, cv2.COLOR_BGR2GRAY)
-
-        circles = np.asarray(cv2.HoughCircles(img, cv2.HOUGH_GRADIENT,1, 2,
-                                              param1=37, param2=28, minRadius=18, maxRadius=25))
         
+        while True:
+            #convert to grayscale for HoughCircles
+            img = cv2.cvtColor(self.camera.getColorImage(), cv2.COLOR_BGR2GRAY)
+            circles = np.asarray(cv2.HoughCircles(img, cv2.HOUGH_GRADIENT,1, 2,
+                                              param1=40, param2=30, minRadius=19, maxRadius=25))
+            if circles.size <= 1:
+                continue
+            else:
+                break
+            
         # The return array from opencv functions puts the end list inside another
         # list, which makes it difficult to deal with, so we reshape.
         circles = circles.reshape((circles.shape[1], circles.shape[2]))
@@ -84,6 +106,41 @@ class Projector:
 
         # The circle with the largest radius should be the sphero as it is larger
         # than any of the pool balls.
-        last = circles[-1]
+        return circles[-1]
 
-        return (last[0], last[1])
+    def projectSpheroLine(self, point, angle=0):
+        """
+        This function uses the given sphero point to project a line at the given 
+        angle starting from the sphero point.
+
+        @param point: The pixel of the center of the sphero
+        @param angle: The angle to shoot the sphero. Default is zero
+
+        @return img: The image with the drawn circles and lines on it.
+        """
+        l = 50
+        s = -67
+        width = int(np.sin(np.deg2rad(angle)) * 100)
+        height = int(np.cos(np.deg2rad(angle)) * 100)
+        end = (int(point[0]) + width, int(point[1]) + height)
+        mask = np.zeros((self.shape), dtype=np.float32)
+        img = cv2.line(mask, (int(point[0]+l), int(point[1])+s), end, (1,1,1), 4)
+
+        #Draw outer circle
+        cv2.circle(img,(int(point[0]+l), int(point[1])+s),int(point[2]*2),(1,1,1),4)
+        
+        return img
+
+
+    def blankScreen(self):
+        """
+        This funciton creates a blank image in the given shape
+
+        @return blank: The np array containing the blank image
+        """
+        
+        blank = np.zeros((self.shape))
+        blank.fill(255)
+        return blank
+        
+        
