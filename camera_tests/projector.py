@@ -13,6 +13,13 @@ class Projector:
         self.camera = Camera()
         self.shape = self.camera.getColorImage().shape
 
+        #Table for offsets
+        self.table = np.genfromtxt('table.csv', delimiter=',')
+
+        # Offsets used for accurate projection
+        self.l = 0
+        self.s = 0
+        
     def getTableSegment(self):
         """
         This function gets the segment of the image that is the table (the felted area)
@@ -108,6 +115,28 @@ class Projector:
         # than any of the pool balls.
         return circles[-1]
 
+    def findClosestPoint(self, point):
+        """
+        This function find a point in the table that is closest to the 
+        input point.
+
+        @param point:    The point to find the closest point to. The location 
+                         of the sphero in the image
+        
+        @return closest[2]: The offset for the length
+        @return closest[3]: The offset for the height
+        """
+
+        closest_dist = 9999999
+        closest = None
+        for t in self.table:
+            dist = math.sqrt((t[1] - point[1])**2 + (t[0] - point[0])**2)
+            if dist < closest_dist:
+                closest_dist = dist
+                closest = t
+
+        return int(closest[2]), int(closest[3])
+    
     def projectSpheroLine(self, point, angle=0):
         """
         This function uses the given sphero point to project a line at the given 
@@ -118,17 +147,31 @@ class Projector:
 
         @return img: The image with the drawn circles and lines on it.
         """
-        l = 50
-        s = -67
-        width = int(np.sin(np.deg2rad(angle)) * 100)
-        height = int(np.cos(np.deg2rad(angle)) * 100)
-        end = (int(point[0]) + width, int(point[1]) + height)
-        mask = np.zeros((self.shape), dtype=np.float32)
-        img = cv2.line(mask, (int(point[0]+l), int(point[1])+s), end, (1,1,1), 4)
+        
+        self.l,self.s = self.findClosestPoint((point[0], point[1]))
+        # w and h are the width and height for a point slightly outside
+        # the radius of the ball, but on the same line. This is for better
+        # clarity and to ensure that the line does not overlap on top of
+        # the sphero, but instead is slightly outside of it. This is the
+        # start point of the line
+        w = int(np.sin(np.deg2rad(angle)) * (point[2]+6))
+        h = int(np.cos(np.deg2rad(angle)) * (point[2]+6))
+
+        # These are the width and height values away from the center of the
+        # sphero for the end point
+        e_w = int(np.sin(np.deg2rad(angle)) * 100)
+        e_h = int(np.cos(np.deg2rad(angle)) * 100)
+        
+  
+        end = (int(point[0]+self.l) + e_w, int(point[1]+self.s) +e_h)
+
+        #Draw the line
+        img = np.zeros((self.shape), dtype=np.float32)
+        cv2.line(img, (int(point[0]+self.l+w), int(point[1]+self.s+h)), end, (1,1,1), 4)
 
         #Draw outer circle
-        cv2.circle(img,(int(point[0]+l), int(point[1])+s),int(point[2]*2),(1,1,1),4)
-        
+        cv2.circle(img,(int(point[0]+self.l), int(point[1])+self.s),int(point[2]*1.6),(1,1,1),4)
+
         return img
 
 
