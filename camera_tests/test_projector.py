@@ -19,6 +19,8 @@ while(1):
         img = p.projectSpheroLine(sphero)
     elif k & 0b11111111 == ord('z'):
         img = p.blankScreen()
-        
+    elif k & 0b11111111 == ord('a'):
+        angle = int(input("Input new angle between 0 and 360: "))
+        img = p.projectSpheroLine(sphero,angle, True)
         
 cv2.destroyAllWindows()

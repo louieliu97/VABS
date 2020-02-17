@@ -137,25 +137,33 @@ class Projector:
 
         return int(closest[2]), int(closest[3])
     
-    def projectSpheroLine(self, point, angle=0):
+    def projectSpheroLine(self, point, angle=0, changeAngle=False):
         """
         This function uses the given sphero point to project a line at the given 
         angle starting from the sphero point.
 
         @param point: The pixel of the center of the sphero
         @param angle: The angle to shoot the sphero. Default is zero
+        @param changeAngle: If we have already found the sphero, but
+                            the angle should be changed.
 
         @return img: The image with the drawn circles and lines on it.
         """
-        
-        self.l,self.s = self.findClosestPoint((point[0], point[1]))
+
+        # Essentially, if this is the first time we are locating the
+        # sphero in its current position, we find the offsets. If
+        # we want to change the angle, we already have the offsets, so
+        # we dont need to do this step, only change the projection angle.
+        if not changeAngle:
+            self.l,self.s = self.findClosestPoint((point[0], point[1]))
+            
         # w and h are the width and height for a point slightly outside
         # the radius of the ball, but on the same line. This is for better
         # clarity and to ensure that the line does not overlap on top of
         # the sphero, but instead is slightly outside of it. This is the
         # start point of the line
-        w = int(np.sin(np.deg2rad(angle)) * (point[2]+6))
-        h = int(np.cos(np.deg2rad(angle)) * (point[2]+6))
+        w = int(np.sin(np.deg2rad(angle)) * (point[2]+15))
+        h = int(np.cos(np.deg2rad(angle)) * (point[2]+15))
 
         # These are the width and height values away from the center of the
         # sphero for the end point
@@ -165,16 +173,31 @@ class Projector:
   
         end = (int(point[0]+self.l) + e_w, int(point[1]+self.s) +e_h)
 
-        #Draw the line
+        #Draw the directional line
         img = np.zeros((self.shape), dtype=np.float32)
         cv2.line(img, (int(point[0]+self.l+w), int(point[1]+self.s+h)), end, (1,1,1), 4)
+
+        img = self.drawCompass(img, point)
 
         #Draw outer circle
         cv2.circle(img,(int(point[0]+self.l), int(point[1])+self.s),int(point[2]*1.6),(1,1,1),4)
 
         return img
 
+    def getEnd(self, point, angle, dist=10):
+        """
+        Gets the end pixel location of a line based on angle and distance
 
+        @param point: The pixel location of the sphero
+        @param angle: The angle to draw the line
+        @param dist:  The distance to draw the line. Default is 10
+
+        @return: The end pixel location of the line
+        """
+        w = int(np.sin(np.deg2rad(angle)) * dist)
+        h = int(np.cos(np.deg2rad(angle)) * dist)
+        return (point[0] + w, point[1] + h)
+    
     def blankScreen(self):
         """
         This funciton creates a blank image in the given shape
@@ -185,5 +208,42 @@ class Projector:
         blank = np.zeros((self.shape))
         blank.fill(255)
         return blank
+
+    
+    def drawCompass(self, img, point):
+        """
+        This function draws a compass where the sphero is. The lines are
+        drawn in 45 degree intervals with the 90 degree intervals being
+        slightly longer lines. This is to help the player decide what angle 
+        to shoot from
+
+        @params img: The image to draw on
+        @params point: The pixel location of the sphero
         
+        @return img: The img with the compass
+        """
+        #Draw the lines in 90 degree intervals
+        radius = 25
+        up = (int(point[0]+self.l), int(point[1]+self.s+radius))
+        down = (int(point[0]+self.l), int(point[1]+self.s-radius))
+        left = (int(point[0]+self.l-radius), int(point[1]+self.s))
+        right = (int(point[0]+self.l+radius), int(point[1]+self.s))
         
+        cv2.line(img, up, (up[0], up[1]+25), (1,1,1), 4)
+        cv2.line(img, down, (down[0], down[1]-25), (1,1,1), 4)
+        cv2.line(img, left, (left[0]-25, left[1]), (1,1,1), 4)
+        cv2.line(img, right, (right[0]+25, right[1]), (1,1,1), 4)
+
+        #Draw lines in 45 degree intervals
+        width = int(np.sin(np.deg2rad(45)) * (point[2]+10))
+        height = int(np.sin(np.deg2rad(45)) * (point[2]+10))
+        angles = [45, 135, 225, 315]
+        points_45 = [(int(point[0]+self.l+width), int(point[1]+self.s+height)),
+                     (int(point[0]+self.l+width), int(point[1]+self.s-height)),
+                     (int(point[0]+self.l-width), int(point[1]+self.s-height)),
+                     (int(point[0]+self.l-width), int(point[1]+self.s+height))]
+        
+        for a, p in zip(angles, points_45):
+            cv2.line(img, p, self.getEnd(p,a, 15), (1,1,1), 4)
+
+        return img
