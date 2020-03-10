@@ -11,12 +11,13 @@ def main():
     mac_address = "F1:8D:AE:17:9D:75" #Sphero 2
     with Sphero(mac_address=mac_address) as sphero:
         sphero.power.wake()
-
-        print(f"Calibrating to North!")
-        sphero.driving.reset_yaw()
         sphero.sensor.magnetometer_calibrate_to_north()
-        sleep(5)
-        #sphero.driving.drive_with_heading(speed=0, heading=315, direction=Direction.forward)
+        sleep(2)
+        sphero.driving.drive_with_heading(speed=0, heading=0, direction=Direction.forward)
+        sleep(1)
+        #sphero.driving.reset_yaw()
+        #sphero.driving.drive_with_heading(speed=100, heading=0, direction=Direction.forward)
+        
 
 
 if __name__ == "__main__":

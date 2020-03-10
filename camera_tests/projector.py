@@ -1,4 +1,5 @@
 import math
+from time import sleep
 
 import cv2
 import pyrealsense2 
@@ -150,6 +151,10 @@ class Projector:
         @return img: The image with the drawn circles and lines on it.
         """
 
+        # We do this because the angle system for the projector is CCW,
+        # but for the sphero it's CW. Thus, we change this to match the
+        # system of
+        #angle = 360 - angle
         # Essentially, if this is the first time we are locating the
         # sphero in its current position, we find the offsets. If
         # we want to change the angle, we already have the offsets, so
