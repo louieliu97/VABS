@@ -138,7 +138,7 @@ class Projector:
 
         return int(closest[2]), int(closest[3])
     
-    def projectSpheroLine(self, point, angle=0, changeAngle=False):
+    def projectSpheroLine(self, point, angle=0, changeAngle=False, calibrate=False):
         """
         This function uses the given sphero point to project a line at the given 
         angle starting from the sphero point.
@@ -159,7 +159,7 @@ class Projector:
         # sphero in its current position, we find the offsets. If
         # we want to change the angle, we already have the offsets, so
         # we dont need to do this step, only change the projection angle.
-        if not changeAngle:
+        if not changeAngle and not calibrate:
             self.l,self.s = self.findClosestPoint((point[0], point[1]))
             
         # w and h are the width and height for a point slightly outside
