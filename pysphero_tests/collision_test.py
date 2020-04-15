@@ -1,3 +1,10 @@
+##################################################################################
+# Title: camera.py
+# Author: Kian Rossitto and Louie Liu
+# Date: 15 April 2020
+##################################################################################
+
+
 from time import sleep
 from typing import Dict
 
